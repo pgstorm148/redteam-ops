@@ -1,1 +1,231 @@
+{% extends "base.html" %}
 
+{% block title %}RedTeam-Ops - Attack Simulator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Attack Configuration -->
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Attack Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Target Objective</label>
+                    <textarea class="form-control" id="objective" rows="3" 
+                              placeholder="e.g., Extract system prompt or bypass content filter..."></textarea>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Number of Attacks</label>
+                        <input type="number" class="form-control" id="numAttacks" value="5" min="1" max="15">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Attack Mode</label>
+                        <select class="form-select" id="attackMode">
+                            <option value="single">Single Turn</option>
+                            <option value="multi">Multi-Turn</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Strategies</label>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="base64" id="strat1" checked>
+                                <label class="form-check-label" for="strat1">Base64 Encoding</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="rot13" id="strat2" checked>
+                                <label class="form-check-label" for="strat2">ROT13</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="homoglyph" id="strat3" checked>
+                                <label class="form-check-label" for="strat3">Homoglyph</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="prefix" id="strat4" checked>
+                                <label class="form-check-label" for="strat4">Prefix Injection</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="whitespace" id="strat5">
+                                <label class="form-check-label" for="strat5">Unicode Smuggling</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="launchAttack()" class="btn btn-danger btn-lg w-100">
+                    <i class="bi bi-rocket-takeoff"></i> Launch Attack
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="col-lg-7">
+        <div id="loadingIndicator" class="loading">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2">Executing attacks... This may take a moment.</p>
+        </div>
+        
+        <div id="resultsContainer" style="display: none;">
+            <!-- Summary Cards -->
+            <div class="row mb-4" id="summaryCards"></div>
+            
+            <!-- Chart -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <canvas id="riskChart" height="100"></canvas>
+                </div>
+            </div>
+            
+            <!-- Detailed Results -->
+            <div id="detailedResults"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function launchAttack() {
+    const objective = document.getElementById('objective').value;
+    const numAttacks = document.getElementById('numAttacks').value;
+    const mode = document.getElementById('attackMode').value;
+    
+    if (!objective) {
+        alert('Please enter a target objective');
+        return;
+    }
+    
+    // Get selected strategies
+    const strategies = [];
+    document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        strategies.push(cb.value);
+    });
+    
+    // Show loading
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('resultsContainer').style.display = 'none';
+    
+    try {
+        const endpoint = mode === 'single' ? '/api/attack/simulate' : '/api/attack/multi-turn';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                objective: objective,
+                num_attacks: parseInt(numAttacks),
+                strategies: strategies,
+                max_turns: 5
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayResults(data);
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        console.error('Attack failed:', error);
+        alert('Attack execution failed. Check console for details.');
+    } finally {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('resultsContainer').style.display = 'block';
+    }
+}
+
+function displayResults(data) {
+    // Summary cards
+    if (data.summary) {
+        const summary = data.summary;
+        document.getElementById('summaryCards').innerHTML = `
+            <div class="col-3">
+                <div class="card text-center p-3">
+                    <div class="text-secondary">Total Attacks</div>
+                    <div class="h3">${summary.total}</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card text-center p-3">
+                    <div class="text-secondary">Critical</div>
+                    <div class="h3 risk-critical">${summary.critical}</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card text-center p-3">
+                    <div class="text-secondary">High Risk</div>
+                    <div class="h3 risk-high">${summary.high}</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card text-center p-3">
+                    <div class="text-secondary">Avg Risk</div>
+                    <div class="h3">${(summary.avg_risk_score * 100).toFixed(0)}%</div>
+                </div>
+            </div>
+        `;
+        
+        // Chart
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [summary.critical, summary.high, summary.medium, summary.low],
+                    backgroundColor: ['#f85149', '#ff7b72', '#d2991d', '#3fb950']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#c9d1d9' }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Detailed results
+    if (data.results) {
+        const detailsHtml = data.results.map((r, i) => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold">#${i+1}: ${r.mutation.strategy}</span>
+                        <span class="badge ${
+                            r.assessment.risk_level === 'CRITICAL' ? 'badge-critical' :
+                            r.assessment.risk_level === 'HIGH' ? 'badge-high' :
+                            r.assessment.risk_level === 'MEDIUM' ? 'badge-medium' : 'badge-low'
+                        }">${r.assessment.risk_level}</span>
+                    </div>
+                    <div class="text-secondary small mb-2">
+                        Risk Score: ${(r.assessment.risk_score * 100).toFixed(1)}%
+                    </div>
+                    <div class="small">
+                        <strong>Mutated Prompt:</strong> 
+                        <span class="text-muted">${r.mutation.mutated.substring(0, 100)}...</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('detailedResults').innerHTML = detailsHtml;
+    }
+}
+</script>
+{% endblock %}
