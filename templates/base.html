@@ -1,1 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RedTeam-Ops{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-red: #f85149;
+            --accent-green: #3fb950;
+            --accent-blue: #58a6ff;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary) !important;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        
+        .form-control, .form-select {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+        
+        .form-control:focus {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+        
+        .btn-success {
+            background-color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+        
+        .risk-critical { color: var(--accent-red); }
+        .risk-high { color: #ff7b72; }
+        .risk-medium { color: #d2991d; }
+        .risk-low { color: var(--accent-green); }
+        
+        .badge-critical { background-color: var(--accent-red); }
+        .badge-high { background-color: #ff7b72; }
+        .badge-medium { background-color: #d2991d; }
+        .badge-low { background-color: var(--accent-green); }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner-border {
+            color: var(--accent-blue);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-shield-shaded"></i> RedTeam-Ops
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-crosshair"></i> Attack Simulator
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/optimizer">
+                            <i class="bi bi-shield-check"></i> Guardrail Optimizer
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
